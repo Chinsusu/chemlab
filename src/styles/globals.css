@@ -156,6 +156,89 @@ p {
   gap: 8px;
 }
 
+.progress-hero {
+  align-items: flex-start;
+  display: grid;
+  gap: 18px;
+  padding: 28px 0 20px;
+}
+
+.progress-meter {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  min-height: 84px;
+  padding: 16px;
+}
+
+.progress-meter strong {
+  color: var(--energy-600);
+  font-family: "Be Vietnam Pro", Inter, sans-serif;
+  font-size: 34px;
+}
+
+.progress-meter span {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.progress-summary {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin-bottom: 16px;
+}
+
+.progress-stat {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 8px;
+  min-height: 88px;
+  padding: 14px;
+}
+
+.progress-stat span {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.progress-stat strong {
+  font-family: "Be Vietnam Pro", Inter, sans-serif;
+  font-size: 22px;
+}
+
+.progress-list {
+  display: grid;
+  gap: 14px;
+}
+
+.progress-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.progress-row__meta {
+  align-content: start;
+  display: grid;
+  gap: 10px;
+}
+
+.progress-row__meta span {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
 .button {
   align-items: center;
   border-radius: 8px;
@@ -504,6 +587,15 @@ p {
 
   .realworld-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .progress-hero {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+
+  .progress-row {
+    grid-template-columns: minmax(0, 1fr) 220px;
   }
 }
 
