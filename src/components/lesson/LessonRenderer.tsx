@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -6,14 +6,16 @@ import { getAnimation } from "@/animations/registry";
 import { Formula } from "@/components/lesson/Formula";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import type { useProgress } from "@/hooks/useProgress";
+import type { PilotTracker } from "@/hooks/usePilotTracking";
 import type { Lesson, QuizQuestion } from "@/lessons/schema";
 
 interface LessonRendererProps {
   lesson: Lesson;
   progressApi?: ReturnType<typeof useProgress>;
+  pilotTracker?: PilotTracker;
 }
 
-export function LessonRenderer({ lesson, progressApi }: LessonRendererProps) {
+export function LessonRenderer({ lesson, progressApi, pilotTracker }: LessonRendererProps) {
   const initialStep = progressApi?.progress.lessonSteps[lesson.id] ?? 0;
   const [activeStep, setActiveStep] = useState(initialStep);
   const reducedMotion = usePrefersReducedMotion();
@@ -31,6 +33,7 @@ export function LessonRenderer({ lesson, progressApi }: LessonRendererProps) {
     const nextStep = Math.max(0, Math.min(lastStepIndex, stepIndex));
     setActiveStep(nextStep);
     progressApi?.markStep(lesson.id, nextStep);
+    pilotTracker?.trackStepCompleted(nextStep);
     if (nextStep === lastStepIndex) {
       progressApi?.completeLesson(lesson.id);
     }
@@ -39,6 +42,7 @@ export function LessonRenderer({ lesson, progressApi }: LessonRendererProps) {
   const handleNextLessonClick = () => {
     progressApi?.completeLesson(lesson.id);
     progressApi?.recordNextLessonClick(lesson.id);
+    pilotTracker?.trackNextLessonClicked();
   };
 
   return (
@@ -67,7 +71,12 @@ export function LessonRenderer({ lesson, progressApi }: LessonRendererProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <StepView lesson={lesson} step={step} reducedMotion={reducedMotion} />
+          <StepView
+            lesson={lesson}
+            step={step}
+            reducedMotion={reducedMotion}
+            pilotTracker={pilotTracker}
+          />
         </motion.div>
 
         <div className="lesson-actions">
@@ -123,11 +132,13 @@ function Stepper({
 function StepView({
   lesson,
   step,
-  reducedMotion
+  reducedMotion,
+  pilotTracker
 }: {
   lesson: Lesson;
   step: Lesson["steps"][number];
   reducedMotion: boolean;
+  pilotTracker?: PilotTracker;
 }) {
   const Animation = "animation" in step && step.animation ? getAnimation(step.animation) : null;
 
@@ -154,7 +165,14 @@ function StepView({
         </>
       ) : null}
       {step.type === "realworld" ? <RealworldItems items={step.items} /> : null}
-      {step.type === "quiz" ? <QuizBlock questions={step.questions} objectives={lesson.sgkMatrix.objectives} /> : null}
+      {step.type === "quiz" ? (
+        <QuizBlock
+          questions={step.questions}
+          objectives={lesson.sgkMatrix.objectives}
+          onAnswer={pilotTracker?.trackQuizAnswer}
+          onCompleted={pilotTracker?.trackQuizCompleted}
+        />
+      ) : null}
     </article>
   );
 }
@@ -194,12 +212,17 @@ function RealworldItems({
 
 function QuizBlock({
   questions,
-  objectives
+  objectives,
+  onAnswer,
+  onCompleted
 }: {
   questions: QuizQuestion[];
   objectives: string[];
+  onAnswer?: (questionIndex: number, question: QuizQuestion, selectedIndex: number) => void;
+  onCompleted?: (mainScore: number, mainQuestionCount: number) => void;
 }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
+  const completionTracked = useRef(false);
   const score = useMemo(
     () =>
       questions.filter((question, index) => !question.isMisconceptionCheck && answers[index] === question.answerIndex)
@@ -207,6 +230,18 @@ function QuizBlock({
     [answers, questions]
   );
   const mainQuestionCount = questions.filter((question) => !question.isMisconceptionCheck).length;
+  const answeredCount = Object.keys(answers).length;
+
+  useEffect(() => {
+    if (completionTracked.current || answeredCount !== questions.length) return;
+    completionTracked.current = true;
+    onCompleted?.(score, mainQuestionCount);
+  }, [answeredCount, mainQuestionCount, onCompleted, questions.length, score]);
+
+  const handleAnswer = (questionIndex: number, question: QuizQuestion, optionIndex: number) => {
+    setAnswers((current) => ({ ...current, [questionIndex]: optionIndex }));
+    onAnswer?.(questionIndex, question, optionIndex);
+  };
 
   return (
     <div className="quiz-block">
@@ -231,7 +266,7 @@ function QuizBlock({
                     answered && isCorrect ? "is-correct" : ""
                   } ${selected && !isCorrect ? "is-wrong" : ""}`}
                   key={option}
-                  onClick={() => setAnswers((current) => ({ ...current, [questionIndex]: optionIndex }))}
+                  onClick={() => handleAnswer(questionIndex, question, optionIndex)}
                   type="button"
                 >
                   {option}

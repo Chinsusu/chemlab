@@ -7,6 +7,7 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "validate:lessons": "tsx scripts/validate-lessons.ts",
+    "pilot:report": "tsx scripts/pilot-report.ts",
     "test": "vitest run",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",

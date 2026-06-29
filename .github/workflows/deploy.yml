@@ -9,6 +9,7 @@ on:
 jobs:
   validate-build-deploy:
     runs-on: ubuntu-latest
+    environment: production
     permissions:
       contents: read
       deployments: write

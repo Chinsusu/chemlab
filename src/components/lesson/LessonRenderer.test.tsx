@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { LessonRenderer } from "@/components/lesson/LessonRenderer";
+import type { PilotTracker } from "@/hooks/usePilotTracking";
 import { emptyProgress } from "@/lib/storage";
 import { phanUngTaoNuoc } from "@/lessons/data/phan-ung-tao-nuoc";
 
@@ -23,6 +24,16 @@ function renderLesson(progressApi = createProgressApi()) {
     </MemoryRouter>
   );
   return progressApi;
+}
+
+function createPilotTracker(): PilotTracker {
+  return {
+    session: null,
+    trackStepCompleted: vi.fn(),
+    trackQuizAnswer: vi.fn(),
+    trackQuizCompleted: vi.fn(),
+    trackNextLessonClicked: vi.fn()
+  };
 }
 
 describe("LessonRenderer", () => {
@@ -77,5 +88,33 @@ describe("LessonRenderer", () => {
     await user.click(screen.getByRole("link", { name: "Học bài tiếp theo →" }));
 
     expect(progressApi.recordNextLessonClick).toHaveBeenCalledWith("phan-ung-tao-nuoc");
+  });
+
+  it("emits pilot quiz and next lesson events", async () => {
+    const user = userEvent.setup();
+    const pilotTracker = createPilotTracker();
+
+    render(
+      <MemoryRouter>
+        <LessonRenderer lesson={phanUngTaoNuoc} progressApi={createProgressApi()} pilotTracker={pilotTracker} />
+      </MemoryRouter>
+    );
+
+    for (let i = 0; i < 4; i += 1) {
+      await user.click(screen.getByRole("button", { name: "Bước tiếp theo →" }));
+    }
+
+    await user.click(screen.getByRole("button", { name: "Nước" }));
+    await user.click(screen.getByRole("button", { name: "2H₂ + O₂ → 2H₂O" }));
+    await user.click(screen.getByRole("button", { name: "Không, Mặt trời dùng phản ứng nhiệt hạch" }));
+
+    expect(pilotTracker.trackQuizAnswer).toHaveBeenCalledTimes(3);
+    await waitFor(() => {
+      expect(pilotTracker.trackQuizCompleted).toHaveBeenCalledWith(2, 2);
+    });
+
+    await user.click(screen.getByRole("link", { name: "Học bài tiếp theo →" }));
+
+    expect(pilotTracker.trackNextLessonClicked).toHaveBeenCalledTimes(1);
   });
 });

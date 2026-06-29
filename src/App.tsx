@@ -1,6 +1,7 @@
 import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { LessonRenderer } from "@/components/lesson/LessonRenderer";
+import { usePilotTracking } from "@/hooks/usePilotTracking";
 import { useProgress } from "@/hooks/useProgress";
 import { lessons } from "@/lessons";
 
@@ -117,9 +118,10 @@ function LessonRoute() {
   const { id } = useParams();
   const lesson = lessons.find((item) => item.id === id);
   const progressApi = useProgress();
+  const pilotTracker = usePilotTracking(lesson?.id ?? "unknown");
 
   if (!lesson) return <Navigate to="/" replace />;
-  return <LessonRenderer lesson={lesson} progressApi={progressApi} />;
+  return <LessonRenderer lesson={lesson} progressApi={progressApi} pilotTracker={pilotTracker} />;
 }
 
 function AboutRoute() {

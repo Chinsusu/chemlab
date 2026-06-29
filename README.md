@@ -17,3 +17,7 @@ thế, tạo ADR mới và đánh dấu cái cũ là "Bị thay thế" (Supersed
 
 Mỗi ADR gồm: Trạng thái · Bối cảnh · Quyết định · Lý do · Hệ quả (tích cực + đánh
 đổi) · Phương án đã cân nhắc · Điều kiện xem lại.
+
+## Tài liệu vận hành
+
+- [Pilot test protocol](08-pilot-test-protocol.md) — cách test MVP với học sinh lớp 8.
