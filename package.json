@@ -1,0 +1,31 @@
+{
+  "name": "chemlab",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "validate:lessons": "tsx scripts/validate-lessons.ts",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "deploy": "pnpm build && wrangler deploy"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.2",
+    "framer-motion": "^12.23.26",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.0",
+    "wrangler": "^4.55.0"
+  }
+}
