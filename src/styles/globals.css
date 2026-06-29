@@ -256,6 +256,12 @@ p {
   opacity: 0.45;
 }
 
+.button.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .button--primary {
   background: var(--energy-500);
   color: #3d2307;
@@ -311,6 +317,11 @@ p {
   min-height: 58px;
   padding: 4px;
   width: 100%;
+}
+
+.stepper button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
 }
 
 .stepper span {
@@ -470,6 +481,145 @@ p {
   padding: 14px;
 }
 
+.challenge-panel {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 14px;
+}
+
+.challenge-prompt {
+  display: grid;
+  gap: 6px;
+}
+
+.challenge-prompt span {
+  color: var(--energy-600);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.challenge-prompt p,
+.predict-block p {
+  color: var(--text);
+  font-weight: 700;
+  margin: 0;
+}
+
+.challenge-action {
+  justify-self: start;
+  min-width: 120px;
+}
+
+.challenge-explanation {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  margin: 0;
+  padding: 12px;
+}
+
+.feedback--warning {
+  background: color-mix(in srgb, var(--warning), transparent 86%);
+  border: 1px solid color-mix(in srgb, var(--warning), transparent 45%);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 10px 12px;
+}
+
+.interactive-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.molecule-tray,
+.ratio-controls {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.molecule-chip,
+.ratio-control,
+.product-preview,
+.reaction-preview {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 64px;
+  padding: 12px;
+}
+
+.molecule-chip {
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+
+.molecule-chip span,
+.product-preview span,
+.reaction-preview span,
+.ratio-label {
+  color: var(--text-muted);
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+}
+
+.molecule-chip.is-selected,
+.product-preview.is-ready,
+.reaction-preview.is-ready {
+  background: var(--aqua-100);
+  border-color: var(--aqua-500);
+  color: #055246;
+}
+
+.product-preview,
+.reaction-preview {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ratio-control {
+  display: grid;
+  gap: 10px;
+}
+
+.stepper-control {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 44px minmax(44px, 1fr) 44px;
+}
+
+.stepper-control button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 22px;
+  min-height: 44px;
+}
+
+.stepper-control strong {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 22px;
+  text-align: center;
+}
+
 .combustion-wrap canvas {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -492,6 +642,16 @@ p {
 
 .mini-card {
   padding: 16px;
+}
+
+.explore-card {
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.explore-card.is-open {
+  border-color: var(--aqua-500);
 }
 
 .mini-card__icon {
@@ -551,6 +711,8 @@ p {
 .quiz-score {
   background: var(--surface-2);
   border-radius: var(--radius);
+  display: grid;
+  gap: 6px;
   font-weight: 700;
   padding: 14px;
 }

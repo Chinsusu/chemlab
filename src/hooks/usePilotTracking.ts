@@ -4,6 +4,7 @@ import {
   ensurePilotSession,
   sendPilotEvent,
   sendPilotQuizAttempt,
+  type PilotChallengeEventType,
   type PilotEventInput
 } from "@/lib/pilotEvents";
 import { resolvePilotSessionFromUrl, type PilotSession } from "@/lib/pilotSession";
@@ -12,9 +13,21 @@ import type { QuizQuestion } from "@/lessons/schema";
 export interface PilotTracker {
   session: PilotSession | null;
   trackStepCompleted(stepIndex: number): void;
+  trackChallengeEvent(input: PilotChallengeEventInput): void;
   trackQuizAnswer(questionIndex: number, question: QuizQuestion, selectedIndex: number): void;
   trackQuizCompleted(mainScore: number, mainQuestionCount: number): void;
   trackNextLessonClicked(): void;
+}
+
+export interface PilotChallengeEventInput {
+  stepIndex: number;
+  challengeId: string;
+  challengeEvent: PilotChallengeEventType;
+  selectedIndex?: number;
+  isCorrect?: boolean;
+  failureMode?: string;
+  timeOnTaskMs?: number;
+  state?: Record<string, unknown>;
 }
 
 export function usePilotTracking(lessonId: string): PilotTracker {
@@ -54,6 +67,19 @@ export function usePilotTracking(lessonId: string): PilotTracker {
         trackEvent({
           type: "step_completed",
           stepIndex
+        });
+      },
+      trackChallengeEvent: (input: PilotChallengeEventInput) => {
+        trackEvent({
+          type: "challenge_event",
+          stepIndex: input.stepIndex,
+          challengeId: input.challengeId,
+          challengeEvent: input.challengeEvent,
+          selectedIndex: input.selectedIndex,
+          isCorrect: input.isCorrect,
+          failureMode: input.failureMode,
+          timeOnTaskMs: input.timeOnTaskMs,
+          state: input.state
         });
       },
       trackQuizAnswer: (questionIndex: number, question: QuizQuestion, selectedIndex: number) => {

@@ -4,14 +4,28 @@ import type { QuizQuestion } from "@/lessons/schema";
 export type PilotEventType =
   | "lesson_started"
   | "step_completed"
+  | "challenge_event"
   | "quiz_answered"
   | "quiz_completed"
   | "next_lesson_clicked";
+
+export type PilotChallengeEventType =
+  | "attempt"
+  | "predictChoice"
+  | "wrongOption"
+  | "solved"
+  | "revealOpened"
+  | "timeOnTask";
 
 export interface PilotEventInput {
   type: PilotEventType;
   lessonId: string;
   stepIndex?: number;
+  challengeId?: string;
+  challengeEvent?: PilotChallengeEventType;
+  failureMode?: string;
+  timeOnTaskMs?: number;
+  state?: Record<string, unknown>;
   questionIndex?: number;
   selectedIndex?: number;
   isCorrect?: boolean;
@@ -47,6 +61,11 @@ export async function sendPilotEvent(
     event_type: event.type,
     lesson_id: event.lessonId,
     step_index: event.stepIndex,
+    challenge_id: event.challengeId,
+    challenge_event: event.challengeEvent,
+    failure_mode: event.failureMode,
+    time_on_task_ms: event.timeOnTaskMs,
+    state: event.state,
     question_index: event.questionIndex,
     selected_index: event.selectedIndex,
     is_correct: event.isCorrect,

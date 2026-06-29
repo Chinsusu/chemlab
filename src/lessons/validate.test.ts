@@ -13,6 +13,43 @@ describe("validateLesson", () => {
     expect(validateLesson(phanUngTaoNuoc)).toEqual([]);
   });
 
+  it("rejects steps without a challenge", () => {
+    const lesson = structuredClone(phanUngTaoNuoc) as unknown as { steps: Array<Record<string, unknown>> };
+    const firstStep = lesson.steps[0];
+    if (!firstStep) throw new Error("Expected first step");
+    delete firstStep.challenge;
+
+    expect(validateLesson(lesson)).toEqual(
+      expect.arrayContaining([expect.stringContaining("steps.0.challenge")])
+    );
+  });
+
+  it("rejects manipulate challenges without an interactive", () => {
+    const lesson = structuredClone(phanUngTaoNuoc) as Lesson;
+    const challenge = lesson.steps[2].challenge;
+    if (challenge.type !== "manipulate") throw new Error("Expected manipulate challenge");
+    challenge.interactive = undefined;
+
+    expect(validateLesson(lesson)).toEqual(
+      expect.arrayContaining([expect.stringContaining("type 'manipulate' phải có interactive")])
+    );
+  });
+
+  it("rejects future interactive ids in MVP lessons", () => {
+    const lesson = structuredClone(phanUngTaoNuoc) as unknown as {
+      steps: Array<{ challenge: { interactive?: { id: string } } }>;
+    };
+    const thirdStep = lesson.steps[2];
+    if (!thirdStep) throw new Error("Expected third step");
+    const interactive = thirdStep.challenge.interactive;
+    if (!interactive) throw new Error("Expected interactive");
+    interactive.id = "star-slider";
+
+    expect(validateLesson(lesson)).toEqual(
+      expect.arrayContaining([expect.stringContaining("Invalid enum value")])
+    );
+  });
+
   it("rejects lessons where out-of-curriculum time exceeds 20%", () => {
     const lesson = cloneLesson();
     lesson.steps[0].estimatedMinutes = 3;

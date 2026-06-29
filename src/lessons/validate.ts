@@ -1,5 +1,7 @@
 import { LessonSchema, type Lesson, type ReactionSpecies } from "@/lessons/schema";
 
+const MVP_INTERACTIVE_IDS = new Set(["ratio-mixer", "combine"]);
+
 export function validateLesson(lesson: unknown): string[] {
   const parsed = LessonSchema.safeParse(lesson);
   if (!parsed.success) {
@@ -62,6 +64,57 @@ export function validateLesson(lesson: unknown): string[] {
       errors.push(`Bước ngoài CT cần chip "Ngoài chương trình: ..." (${step.sgkChip})`);
     }
   }
+
+  const hookChallenge = lessonData.steps[0].challenge;
+  const quizChallenge = lessonData.steps[4].challenge;
+  if (hookChallenge.type !== "predict") {
+    errors.push("Bước Hook nên là challenge type 'predict' (đoán → mở)");
+  }
+  if (quizChallenge.type !== "recall") {
+    errors.push("Bước Quiz phải là challenge type 'recall'");
+  }
+
+  if (
+    hasOutOfCurriculum &&
+    !lessonData.steps.some((step) => step.challenge.misconceptionCheck)
+  ) {
+    errors.push("Bài có phần ngoài CT nhưng không challenge nào misconceptionCheck=true");
+  }
+
+  lessonData.steps.forEach((step) => {
+    const challenge = step.challenge;
+    if (
+      challenge.type === "manipulate" &&
+      (!challenge.interactive || !MVP_INTERACTIVE_IDS.has(challenge.interactive.id))
+    ) {
+      errors.push(`Challenge ${challenge.id}: manipulate thiếu interactive MVP hợp lệ`);
+    }
+
+    if (
+      challenge.type === "predict" &&
+      challenge.predict &&
+      challenge.successCriteria.kind === "choice" &&
+      challenge.successCriteria.correctIndex >= challenge.predict.options.length
+    ) {
+      errors.push(`Challenge ${challenge.id}: successCriteria.correctIndex ngoài mảng options`);
+    }
+
+    if (
+      challenge.type === "recall" &&
+      challenge.successCriteria.kind === "answerAll" &&
+      "questions" in step &&
+      challenge.successCriteria.minCorrect > step.questions.length
+    ) {
+      errors.push(`Challenge ${challenge.id}: minCorrect vượt số câu hỏi`);
+    }
+
+    if (
+      challenge.telemetry.objectiveRef !== undefined &&
+      challenge.telemetry.objectiveRef >= lessonData.sgkMatrix.objectives.length
+    ) {
+      errors.push(`Challenge ${challenge.id}: telemetry.objectiveRef vượt số mục tiêu cần đạt`);
+    }
+  });
 
   if (
     lessonData.meta.status === "published" &&

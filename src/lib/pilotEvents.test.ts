@@ -74,4 +74,37 @@ describe("pilot events", () => {
       })
     );
   });
+
+  it("inserts challenge telemetry through Supabase REST when configured", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 201 });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubEnv("VITE_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("VITE_SUPABASE_ANON_KEY", "anon-key");
+
+    await expect(
+      sendPilotEvent(session, {
+        type: "challenge_event",
+        lessonId: "phan-ung-tao-nuoc",
+        stepIndex: 2,
+        challengeId: "water-reaction-mix",
+        challengeEvent: "wrongOption",
+        failureMode: "leftoverO2",
+        state: { H2: 1, O2: 1 }
+      })
+    ).resolves.toBe(true);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://example.supabase.co/rest/v1/pilot_events",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"challenge_id":"water-reaction-mix"')
+      })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://example.supabase.co/rest/v1/pilot_events",
+      expect.objectContaining({
+        body: expect.stringContaining('"failure_mode":"leftoverO2"')
+      })
+    );
+  });
 });

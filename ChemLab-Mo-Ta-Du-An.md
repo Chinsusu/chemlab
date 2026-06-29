@@ -3,20 +3,23 @@
 > Website dạy hóa học theo phương pháp "câu hỏi dẫn dắt", bám sát chương trình
 > SGK Việt Nam nhưng không khô khan như sách giáo khoa.
 
-**Phiên bản tài liệu:** 1.5
+**Phiên bản tài liệu:** 1.6
 **Ngày cập nhật:** 06/2026
 **Trạng thái:** Định hướng sản phẩm (chưa khởi động phát triển)
 
-**Thay đổi so với 1.4:**
-- TypeScript contract ép đúng thứ tự bước: `steps` là tuple
-  `[HookStep, ConceptStep, ConceptStep | ReactionStep, RealworldStep, QuizStep]`,
-  khớp với Zod — mục 6.1.
-- `sgkChip` chuyển thành bắt buộc (bỏ dấu `?`); bước ngoài chương trình dùng chip
-  dạng "Ngoài chương trình: ..." — mục 6.1, 6.2.
-- Thay parse công thức bằng regex bằng trường `atomCounts` có cấu trúc; validator
-  cân bằng phản ứng đọc `atomCounts` thay vì regex — mục 6.1, 6.2.
-- Ghi thẳng "15-20 học sinh lớp 8" để tránh test lẫn lớp 9-10 rồi thiếu mẫu lớp 8
-  — mục 9.1.
+**Thay đổi so với 1.5:**
+- Thêm hợp đồng `Challenge` cho mô hình "mini lab mission": mỗi bước có ĐÚNG MỘT
+  nhiệm vụ (một hành động chính, một kết quả kiểm được) gồm dự đoán → thao tác →
+  kiểm → mở giải thích. Mục 6.1 (type), 6.2 (Zod + validator), 6.3 (quy tắc +
+  telemetry), 6.4 (ví dụ). Mục đích: khóa hợp đồng để React chỉ là renderer cho
+  spec, không trôi thành prototype riêng mỗi bài.
+- `successCriteria` khai báo được (choice/target/exploreCount/answerAll), KHÔNG
+  dùng biểu thức eval — renderer kiểm dữ liệu, không chạy code tùy bài.
+- Tách rõ: `type` = kiểu tương tác; `interactive` = widget cụ thể từ registry
+  (chỉ "manipulate" cần); mixer chỉ là một `interactive.id`, không phải kiến trúc.
+- Thêm `"combine"` vào InteractiveId (mission Khái niệm).
+- Score clarity + đo pilot gắn vào `misconceptionCheck` (tính điểm riêng) và
+  `telemetry` (ghi nhận, không chặn) ở mỗi challenge.
 
 ---
 
@@ -347,9 +350,12 @@ type AnimationId =
 type FutureAnimationId = "molecule-3d";
 
 type InteractiveId =
-  | "star-slider"    // slider kích thước sao
-  | "ratio-mixer"    // trộn tỉ lệ chất phản ứng
-  | "temp-control";  // điều chỉnh nhiệt độ
+  | "ratio-mixer"    // trộn tỉ lệ chất phản ứng (mixer — widget chủ lực)
+  | "combine";       // chạm 2 chất tham gia để hợp thành sản phẩm
+// FUTURE (không dùng ở MVP, validator runtime phải chặn):
+type FutureInteractiveId =
+  | "star-slider"    // slider kích thước sao (tương lai)
+  | "temp-control";  // điều chỉnh nhiệt độ (tương lai)
 
 interface SgkMatrix {
   grade: number;                  // lớp áp dụng
@@ -370,12 +376,61 @@ interface LessonMeta {
   hasSafetyWarning: boolean;                  // true nếu bài có phản ứng cháy/nổ
 }
 
-// Trường CHUNG cho MỌI bước — phục vụ chip SGK cấp bước và đo tỷ lệ 80/20
+// ─────────────────────────────────────────────────────────────────────────
+// Challenge — HỢP ĐỒNG NHIỆM VỤ (chi tiết mục 6.3). Mỗi bước có ĐÚNG MỘT:
+// một nhiệm vụ · một hành động chính · một kết quả KIỂM ĐƯỢC.
+//   type            = kiểu tương tác (cách học sinh hành động)
+//   interactive     = widget cụ thể trong registry (CHỈ "manipulate" mới cần)
+//   successCriteria = điều kiện vượt KHAI BÁO (renderer không eval biểu thức)
+type ChallengeType = "predict" | "manipulate" | "explore" | "recall";
+
+interface Predict {                 // commit-a-guess TRƯỚC khi thao tác
+  prompt: string;
+  options: string[];                // 2–4 lựa chọn
+  correctIndex: number;             // để ghi nhận + phản hồi; KHÔNG chặn qua bước
+  allowWrongToReveal: true;         // luôn cho xem giải thích dù đoán sai (productive failure)
+}
+
+interface InteractiveRef {          // CHỈ dùng cho type "manipulate"
+  id: InteractiveId;                // widget trong registry (vd "ratio-mixer")
+  params?: Record<string, unknown>; // cấu hình widget (dải giá trị, chất lấy từ bước...)
+}
+
+type SuccessCriteria =              // điều kiện vượt — KHAI BÁO, không phải code
+  | { kind: "choice"; correctIndex: number }                              // đã chọn là qua; correctIndex chỉ để feedback/telemetry
+  | { kind: "target"; goal: Record<string, string | number | boolean> }   // widget đạt trạng thái đích
+  | { kind: "exploreCount"; min: number }                                 // mở tối thiểu N mục
+  | { kind: "answerAll"; minCorrect: number };                            // trả lời hết, đúng tối thiểu N
+
+interface Feedback {
+  onWrong?: string;                       // câu mặc định khi sai
+  byMode?: Record<string, string>;        // theo mã lỗi widget trả về (vd "leftoverO2")
+}
+
+interface Telemetry {                     // ghi nhận cho pilot (mục 9) — ĐO, không chặn
+  events: ("attempt" | "predictChoice" | "timeOnTask" | "wrongOption" | "solved" | "revealOpened")[];
+  objectiveRef?: number;                  // index mục tiêu cần đạt mà nhiệm vụ này đo
+}
+
+interface Challenge {
+  id: string;
+  type: ChallengeType;
+  prompt: string;                 // hướng dẫn nhiệm vụ ("Chỉnh tỉ lệ…", "Đoán…", "Chạm…")
+  predict?: Predict;              // BẮT BUỘC nếu type==="predict"; tùy chọn cho "manipulate"
+  interactive?: InteractiveRef;   // BẮT BUỘC nếu type==="manipulate"
+  successCriteria: SuccessCriteria;
+  feedback?: Feedback;
+  explanation: string;            // giải thích chỉ hiện SAU khi hoàn thành (reveal-after-action)
+  misconceptionCheck: boolean;    // nhiệm vụ kiểm hiểu nhầm → tính điểm riêng (score clarity)
+  telemetry: Telemetry;
+}
+
+// Trường CHUNG cho MỌI bước — chip SGK cấp bước, đo 80/20, và MỘT challenge
 interface StepBase {
   curriculumScope: "core" | "outOfCurriculum"; // bước này là kiến thức SGK hay phần ngoài lề
   estimatedMinutes: number;                    // thời lượng ước tính (để đo 80/20)
-  sgkChip: string;                             // BẮT BUỘC. Bước core: nhãn SGK (vd "Phản ứng hóa học").
-                                               // Bước outOfCurriculum: dạng "Ngoài chương trình: nhiệt hạch".
+  sgkChip: string;                             // BẮT BUỘC (bước ngoài CT: "Ngoài chương trình: ...")
+  challenge: Challenge;                        // BẮT BUỘC — nhiệm vụ của bước (mục 6.3)
 }
 
 interface QuizQuestion {
@@ -400,7 +455,7 @@ type HookStep = StepBase & {
   type: "hook"; title: string; body: string; facts: string[]; animation: AnimationId;
 };
 type ConceptStep = StepBase & {
-  type: "concept"; title: string; body: string; animation?: AnimationId; interactive?: InteractiveId;
+  type: "concept"; title: string; body: string; animation?: AnimationId;
 };
 type ReactionStep = StepBase & {
   type: "reaction";
@@ -409,7 +464,6 @@ type ReactionStep = StepBase & {
   products: ReactionSpecies[];         // [{formula:"H2O",coefficient:2,atomCounts:{H:2,O:1}}]
   displayEquation: string;             // chuỗi hiển thị, vd "2H₂ + O₂ → 2H₂O"
   safetyNote: string;                  // BẮT BUỘC nếu là phản ứng cháy/nổ
-  interactive?: InteractiveId;
 };
 type RealworldStep = StepBase & {
   type: "realworld"; title: string; items: { icon: string; label: string; note: string }[];
@@ -450,13 +504,61 @@ buộc nội dung (80/20, answerIndex, mapsToObjective, an toàn, ký off).
 import { z } from "zod";
 
 const AnimationId = z.enum(["sun", "h-atom", "combustion"]);
-const InteractiveId = z.enum(["star-slider", "ratio-mixer", "temp-control"]);
+const InteractiveId = z.enum(["ratio-mixer", "combine"]);
+
+// ── Challenge (mục 6.3) ──
+const PredictSchema = z.object({
+  prompt: z.string().min(1),
+  options: z.array(z.string().min(1)).min(2).max(4),
+  correctIndex: z.number().int().nonnegative(),
+  allowWrongToReveal: z.literal(true),
+}).refine((p) => p.correctIndex < p.options.length, {
+  message: "predict.correctIndex ngoài mảng options",
+});
+
+const SuccessCriteria = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("choice"), correctIndex: z.number().int().nonnegative() }),
+  z.object({ kind: z.literal("target"), goal: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])) }),
+  z.object({ kind: z.literal("exploreCount"), min: z.number().int().positive() }),
+  z.object({ kind: z.literal("answerAll"), minCorrect: z.number().int().nonnegative() }),
+]);
+
+const ChallengeSchema = z.object({
+  id: z.string().min(1),
+  type: z.enum(["predict", "manipulate", "explore", "recall"]),
+  prompt: z.string().min(1),
+  predict: PredictSchema.optional(),
+  interactive: z.object({ id: InteractiveId, params: z.record(z.string(), z.unknown()).optional() }).optional(),
+  successCriteria: SuccessCriteria,
+  feedback: z.object({ onWrong: z.string().optional(), byMode: z.record(z.string(), z.string()).optional() }).optional(),
+  explanation: z.string().min(1),
+  misconceptionCheck: z.boolean(),
+  telemetry: z.object({
+    events: z.array(z.enum(["attempt", "predictChoice", "timeOnTask", "wrongOption", "solved", "revealOpened"])).min(1),
+    objectiveRef: z.number().int().nonnegative().optional(),
+  }),
+}).superRefine((c, ctx) => {
+  // ÉP: mỗi type đúng một hình dạng → một nhiệm vụ, một hành động, một kết quả
+  if (c.type === "predict") {
+    if (!c.predict) ctx.addIssue({ code: "custom", message: "type 'predict' phải có predict" });
+    if (c.successCriteria.kind !== "choice") ctx.addIssue({ code: "custom", message: "predict ⇒ successCriteria='choice'" });
+  }
+  if (c.type === "manipulate") {
+    if (!c.interactive) ctx.addIssue({ code: "custom", message: "type 'manipulate' phải có interactive" });
+    if (c.successCriteria.kind !== "target") ctx.addIssue({ code: "custom", message: "manipulate ⇒ successCriteria='target'" });
+  }
+  if (c.type === "explore" && c.successCriteria.kind !== "exploreCount")
+    ctx.addIssue({ code: "custom", message: "explore ⇒ successCriteria='exploreCount'" });
+  if (c.type === "recall" && c.successCriteria.kind !== "answerAll")
+    ctx.addIssue({ code: "custom", message: "recall ⇒ successCriteria='answerAll'" });
+});
 
 // Trường chung — gắn vào mọi bước
 const stepBase = {
   curriculumScope: z.enum(["core", "outOfCurriculum"]),
   estimatedMinutes: z.number().positive(),
-  sgkChip: z.string().min(1),   // bắt buộc; bước ngoài CT dùng "Ngoài chương trình: ..."
+  sgkChip: z.string().min(1),     // bắt buộc; bước ngoài CT dùng "Ngoài chương trình: ..."
+  challenge: ChallengeSchema,     // BẮT BUỘC — một nhiệm vụ mỗi bước
 };
 
 const HookStep = z.object({
@@ -473,7 +575,6 @@ const ConceptStep = z.object({
   title: z.string().min(1),
   body: z.string().min(1),
   animation: AnimationId.optional(),
-  interactive: InteractiveId.optional(),
   ...stepBase,
 });
 
@@ -490,7 +591,6 @@ const ReactionStep = z.object({
   products: z.array(ReactionSpecies).min(1),
   displayEquation: z.string().min(1),
   safetyNote: z.string().min(1),         // bắt buộc với phản ứng
-  interactive: InteractiveId.optional(),
   ...stepBase,
 });
 
@@ -617,7 +717,24 @@ export function validateLesson(lesson: unknown): string[] {
     }
   }
 
-  // 5) Không publish nếu chưa ký off
+  // 5) Hợp đồng Challenge khớp vai trò bước (mục 6.3)
+  const hookCh = L.steps[0].challenge, quizCh = L.steps[4].challenge;
+  if (hookCh.type !== "predict")
+    errors.push("Bước Hook nên là challenge type 'predict' (đoán → mở)");
+  if (quizCh.type !== "recall")
+    errors.push("Bước Quiz phải là challenge type 'recall'");
+  // Nếu bài có phần ngoài CT thì phải có ít nhất 1 nhiệm vụ kiểm hiểu nhầm
+  const hasOut2 = L.steps.some((st) => st.curriculumScope === "outOfCurriculum");
+  if (hasOut2 && !L.steps.some((st) => st.challenge.misconceptionCheck))
+    errors.push("Bài có phần ngoài CT nhưng không challenge nào misconceptionCheck=true");
+  // manipulate phải trỏ tới interactive có trong registry (đã ép ở schema, nhắc lại để rõ)
+  for (const st of L.steps) {
+    const ch = st.challenge;
+    if (ch.type === "manipulate" && !ch.interactive)
+      errors.push(`Challenge ${ch.id}: manipulate thiếu interactive`);
+  }
+
+  // 6) Không publish nếu chưa ký off
   if (L.meta.status === "published" && (!L.meta.reviewedBy || !L.meta.reviewDate)) {
     errors.push("Không được publish khi chưa có reviewedBy + reviewDate");
   }
@@ -627,6 +744,95 @@ export function validateLesson(lesson: unknown): string[] {
 
 Kể cả MVP chỉ có 1 bài, vẫn phải build theo interface + validator này. Nếu code
 bài mẫu kiểu one-off rồi mới làm template ở giai đoạn 2, sẽ phải đập đi làm lại.
+
+---
+
+### 6.3 Quy tắc Challenge (hợp đồng nhiệm vụ)
+
+Mô hình bài học là chuỗi **mission**: mỗi bước = nội dung (vật thể/cảnh + lời dẫn)
++ ĐÚNG MỘT `Challenge`. Đây là hợp đồng để React chỉ là *renderer cho spec*, không
+trôi thành prototype riêng mỗi bài.
+
+**Quy tắc cứng — một challenge = một nhiệm vụ, một hành động chính, một kết quả
+kiểm được.** `type` quyết định hành động, và validator (mục 6.2) ép mỗi `type` đúng
+một hình dạng:
+
+| `type` | Hành động chính | Bắt buộc có | `successCriteria` | Map vào bước |
+|--------|-----------------|-------------|-------------------|--------------|
+| `predict` | Chọn một dự đoán rồi mở giải thích | `predict` | `choice` | Hook |
+| `manipulate` | Thao tác một widget tới trạng thái đích | `interactive` | `target` | Phản ứng (mixer) |
+| `explore` | Mở/lật tối thiểu N mục | — | `exploreCount` | Thực tế |
+| `recall` | Trả lời hết câu hỏi | — | `answerAll` | Quiz |
+
+Ranh giới quan trọng:
+- **`type` ≠ `interactive`.** `type` là *kiểu tương tác*; `interactive` là *widget cụ
+  thể* trong registry. Reaction mixer chỉ là `interactive.id = "ratio-mixer"`,
+  KHÔNG phải toàn bộ kiến trúc. Đổi widget khác (vd cân bằng kéo-thả) chỉ là đổi
+  `interactive.id` + `params`, không đụng hợp đồng.
+- **`successCriteria` khai báo, không eval.** Renderer so trạng thái với dữ liệu
+  (`choice`/`target`/`exploreCount`/`answerAll`), KHÔNG chạy biểu thức tùy bài. Với
+  `manipulate`, widget tự tính đúng/sai theo `goal` rồi báo `solved` + `failureMode`
+  (xem doc 06); challenge không nhúng logic hóa học.
+- Với `choice`, **đã chọn là qua**; `correctIndex` chỉ dùng để hiển thị feedback và
+  telemetry. Dự đoán sai vẫn được reveal để tạo productive failure, không biến hook
+  thành câu đố chặn luồng.
+- **Predict là tùy chọn cho `manipulate`.** Bắt học sinh đoán tỉ lệ trước khi trộn
+  (productive failure). Với `predict`, dự đoán *chính là* hành động.
+- **Reveal-after-action:** `explanation` chỉ hiện SAU khi đạt `successCriteria`.
+  Đoán/thử sai vẫn cho mở (productive failure) nhưng ghi nhận để đo.
+
+**Telemetry (đo pilot, không chặn).** Mỗi challenge khai báo `telemetry.events` cần
+ghi: số lần thử (`attempt`), lựa chọn dự đoán (`predictChoice`), thời gian trên
+nhiệm vụ (`timeOnTask`), đáp án sai (`wrongOption`), giải được (`solved`), mở giải
+thích (`revealOpened`). Đây là dữ liệu phục vụ tiêu chí pass/fail ở mục 9 (completion,
+hiểu nhầm). `objectiveRef` trỏ tới mục tiêu cần đạt mà nhiệm vụ này đo.
+
+**Score clarity.** Challenge có `misconceptionCheck: true` (vd câu Mặt trời) được
+đếm RIÊNG, không trộn vào điểm mục tiêu SGK chính. Giao diện hiện "Bạn đúng 3/3"
+trước (trực giác người học), rồi tách "Mục tiêu SGK 2/2" + "Vượt bẫy hiểu nhầm ✓".
+
+### 6.4 Ví dụ — nhiệm vụ "Phản ứng" của bài tạo nước (manipulate)
+
+```typescript
+const reactionChallenge: Challenge = {
+  id: "water-reaction-mix",
+  type: "manipulate",
+  prompt: "Đoán tỉ lệ đúng để không dư chất nào, rồi cho phản ứng.",
+  predict: {
+    prompt: "Mỗi O₂ cần mấy H₂ để tạo nước trọn vẹn?",
+    options: ["1 H₂", "2 H₂", "3 H₂"],
+    correctIndex: 1,
+    allowWrongToReveal: true,
+  },
+  interactive: {
+    id: "ratio-mixer",
+    params: {
+      reactants: [
+        { formula: "H2", atomCounts: { H: 2 } },
+        { formula: "O2", atomCounts: { O: 2 } },
+      ],
+      product: { formula: "H2O", atomCounts: { H: 2, O: 1 } },
+      range: { min: 0, max: 6 },
+    },
+  },
+  successCriteria: { kind: "target", goal: { product: "H2O", noLeftover: true } },
+  feedback: {
+    byMode: {
+      missingReactant: "Cần cả hydrogen và oxygen mới có phản ứng.",
+      leftoverH2: "Dư hydrogen — quá nhiều H₂ so với O₂.",
+      leftoverO2: "Dư oxygen — mỗi O₂ cần 2 H₂.",
+    },
+  },
+  explanation:
+    "Tỉ lệ 2 H₂ : 1 O₂ tạo nước không dư: 2H₂ + O₂ → 2H₂O. Số nguyên tử hai vế bằng nhau (H: 4=4, O: 2=2).",
+  misconceptionCheck: false,
+  telemetry: { events: ["predictChoice", "attempt", "wrongOption", "solved", "timeOnTask"], objectiveRef: 2 },
+};
+```
+
+Bước Hook dùng cùng hợp đồng nhưng `type: "predict"` (đoán Mặt trời sinh năng lượng
+bằng gì → mở giải thích nhiệt hạch ≠ hóa học) và `misconceptionCheck: true`. Bước
+Quiz là `type: "recall"`. Widget `ratio-mixer` và hợp đồng widget xem doc 06.
 
 ---
 
@@ -870,7 +1076,7 @@ Nguồn: https://pubchem.ncbi.nlm.nih.gov/docs/pug-rest (kiểm tra 06/2026).
 
 ## 12. Bước tiếp theo
 
-1. Hoàn thiện tài liệu mô tả dự án này (đã cập nhật bản 1.5).
+1. Hoàn thiện tài liệu mô tả dự án này (đã cập nhật bản 1.4).
 2. Thiết kế registry animation + form nhập liệu chạy qua Zod validator (mục 6).
 3. Code bài mẫu giai đoạn 1 theo data-driven template, hook "Hydrogen trong Mặt
    trời có liên quan gì đến nước?", trục chính "Phản ứng hóa học tạo nước", kèm
