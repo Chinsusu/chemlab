@@ -90,6 +90,11 @@ button {
   color: var(--text-muted);
 }
 
+.difficulty--done {
+  background: var(--aqua-100);
+  color: #055246;
+}
+
 h1,
 h2,
 h3 {

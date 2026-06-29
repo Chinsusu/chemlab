@@ -1,20 +1,45 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import { getAnimation } from "@/animations/registry";
 import { Formula } from "@/components/lesson/Formula";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import type { useProgress } from "@/hooks/useProgress";
 import type { Lesson, QuizQuestion } from "@/lessons/schema";
 
 interface LessonRendererProps {
   lesson: Lesson;
+  progressApi?: ReturnType<typeof useProgress>;
 }
 
-export function LessonRenderer({ lesson }: LessonRendererProps) {
-  const [activeStep, setActiveStep] = useState(0);
+export function LessonRenderer({ lesson, progressApi }: LessonRendererProps) {
+  const initialStep = progressApi?.progress.lessonSteps[lesson.id] ?? 0;
+  const [activeStep, setActiveStep] = useState(initialStep);
   const reducedMotion = usePrefersReducedMotion();
   const step = lesson.steps[activeStep] ?? lesson.steps[0];
+  const lastStepIndex = lesson.steps.length - 1;
+  const savedStep = progressApi?.progress.lessonSteps[lesson.id];
+
+  useEffect(() => {
+    if (savedStep !== undefined && savedStep !== activeStep) {
+      setActiveStep(Math.min(savedStep, lastStepIndex));
+    }
+  }, [activeStep, lastStepIndex, savedStep]);
+
+  const goToStep = (stepIndex: number) => {
+    const nextStep = Math.max(0, Math.min(lastStepIndex, stepIndex));
+    setActiveStep(nextStep);
+    progressApi?.markStep(lesson.id, nextStep);
+    if (nextStep === lastStepIndex) {
+      progressApi?.completeLesson(lesson.id);
+    }
+  };
+
+  const handleNextLessonClick = () => {
+    progressApi?.completeLesson(lesson.id);
+    progressApi?.recordNextLessonClick(lesson.id);
+  };
 
   return (
     <main className="lesson-shell">
@@ -34,7 +59,7 @@ export function LessonRenderer({ lesson }: LessonRendererProps) {
           <p>{lesson.sgkMatrix.objectives[0]}</p>
         </div>
 
-        <Stepper activeStep={activeStep} setActiveStep={setActiveStep} />
+        <Stepper activeStep={activeStep} setActiveStep={goToStep} />
 
         <motion.div
           key={activeStep}
@@ -49,7 +74,7 @@ export function LessonRenderer({ lesson }: LessonRendererProps) {
           <button
             className="button button--secondary"
             disabled={activeStep === 0}
-            onClick={() => setActiveStep((current) => Math.max(0, current - 1))}
+            onClick={() => goToStep(activeStep - 1)}
             type="button"
           >
             ← Bước trước
@@ -57,13 +82,13 @@ export function LessonRenderer({ lesson }: LessonRendererProps) {
           {activeStep < lesson.steps.length - 1 ? (
             <button
               className="button button--primary"
-              onClick={() => setActiveStep((current) => Math.min(lesson.steps.length - 1, current + 1))}
+              onClick={() => goToStep(activeStep + 1)}
               type="button"
             >
               Bước tiếp theo →
             </button>
           ) : (
-            <Link className="button button--primary" to="/">
+            <Link className="button button--primary" to="/" onClick={handleNextLessonClick}>
               Học bài tiếp theo →
             </Link>
           )}

@@ -1,17 +1,28 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { LessonRenderer } from "@/components/lesson/LessonRenderer";
+import { emptyProgress } from "@/lib/storage";
 import { phanUngTaoNuoc } from "@/lessons/data/phan-ung-tao-nuoc";
 
-function renderLesson() {
+function createProgressApi() {
+  return {
+    progress: emptyProgress,
+    markStep: vi.fn(),
+    completeLesson: vi.fn(),
+    recordNextLessonClick: vi.fn()
+  };
+}
+
+function renderLesson(progressApi = createProgressApi()) {
   render(
     <MemoryRouter>
-      <LessonRenderer lesson={phanUngTaoNuoc} />
+      <LessonRenderer lesson={phanUngTaoNuoc} progressApi={progressApi} />
     </MemoryRouter>
   );
+  return progressApi;
 }
 
 describe("LessonRenderer", () => {
@@ -46,5 +57,25 @@ describe("LessonRenderer", () => {
     await user.click(screen.getByRole("button", { name: "Không, Mặt trời dùng phản ứng nhiệt hạch" }));
 
     expect(screen.getByText("Điểm quiz chính: 2/2")).toBeVisible();
+  });
+
+  it("records progress when advancing and clicking next lesson", async () => {
+    const user = userEvent.setup();
+    const progressApi = renderLesson();
+
+    await user.click(screen.getByRole("button", { name: "Bước tiếp theo →" }));
+
+    expect(progressApi.markStep).toHaveBeenCalledWith("phan-ung-tao-nuoc", 1);
+
+    for (let i = 0; i < 3; i += 1) {
+      await user.click(screen.getByRole("button", { name: "Bước tiếp theo →" }));
+    }
+
+    expect(progressApi.markStep).toHaveBeenCalledWith("phan-ung-tao-nuoc", 4);
+    expect(progressApi.completeLesson).toHaveBeenCalledWith("phan-ung-tao-nuoc");
+
+    await user.click(screen.getByRole("link", { name: "Học bài tiếp theo →" }));
+
+    expect(progressApi.recordNextLessonClick).toHaveBeenCalledWith("phan-ung-tao-nuoc");
   });
 });

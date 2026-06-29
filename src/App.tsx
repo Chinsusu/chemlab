@@ -1,9 +1,12 @@
 import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { LessonRenderer } from "@/components/lesson/LessonRenderer";
+import { useProgress } from "@/hooks/useProgress";
 import { lessons } from "@/lessons";
 
 function HomeRoute() {
+  const { progress } = useProgress();
+
   return (
     <main className="page">
       <section className="hero">
@@ -25,6 +28,9 @@ function HomeRoute() {
                 </span>
               ))}
               <span className="difficulty">Độ khó {lesson.difficulty}</span>
+              {progress.completedLessonIds.includes(lesson.id) ? (
+                <span className="difficulty difficulty--done">Đã hoàn thành</span>
+              ) : null}
             </div>
             <h2>{lesson.question}</h2>
             <p>{lesson.sgkMatrix.objectives[0]}</p>
@@ -38,9 +44,10 @@ function HomeRoute() {
 function LessonRoute() {
   const { id } = useParams();
   const lesson = lessons.find((item) => item.id === id);
+  const progressApi = useProgress();
 
   if (!lesson) return <Navigate to="/" replace />;
-  return <LessonRenderer lesson={lesson} />;
+  return <LessonRenderer lesson={lesson} progressApi={progressApi} />;
 }
 
 function AboutRoute() {
