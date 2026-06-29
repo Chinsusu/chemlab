@@ -69,7 +69,7 @@ export const QuizQuestionSchema = z
     feedback: z.string().min(1)
   })
   .refine((q) => q.answerIndex < q.options.length, {
-    message: "answerIndex phai nam trong [0, options.length)"
+    message: "answerIndex phải nằm trong [0, options.length)"
   });
 
 export const QuizStepSchema = z.object({

@@ -7,6 +7,7 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "validate:lessons": "tsx scripts/validate-lessons.ts",
+    "test": "vitest run",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "deploy": "pnpm build && wrangler deploy"
@@ -20,12 +21,17 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^26.0.1",
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
+    "jsdom": "^29.1.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
+    "vitest": "^4.1.9",
     "wrangler": "^4.55.0"
   }
 }

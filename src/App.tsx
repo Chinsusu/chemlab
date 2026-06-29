@@ -8,14 +8,14 @@ function HomeRoute() {
     <main className="page">
       <section className="hero">
         <div className="hero__eyebrow">ChemLab MVP</div>
-        <h1>Hoc hoa hoc bang cau hoi that.</h1>
+        <h1>Học hóa học bằng câu hỏi thật.</h1>
         <p>
-          Bai mau dau tien dung cau hoi ve hydrogen trong Mat troi de dan vao phan ung
-          hoa hoc tao nuoc, bam theo KHTN 8.
+          Bài mẫu đầu tiên dùng câu hỏi về hydrogen trong Mặt trời để dẫn vào phản
+          ứng hóa học tạo nước, bám theo KHTN 8.
         </p>
       </section>
 
-      <section className="question-grid" aria-label="Danh sach cau hoi">
+      <section className="question-grid" aria-label="Danh sách câu hỏi">
         {lessons.map((lesson) => (
           <Link className="question-card" key={lesson.id} to={`/lesson/${lesson.id}`}>
             <div className="question-card__tags">
@@ -24,7 +24,7 @@ function HomeRoute() {
                   {tag}
                 </span>
               ))}
-              <span className="difficulty">Do kho {lesson.difficulty}</span>
+              <span className="difficulty">Độ khó {lesson.difficulty}</span>
             </div>
             <h2>{lesson.question}</h2>
             <p>{lesson.sgkMatrix.objectives[0]}</p>
@@ -48,15 +48,15 @@ function AboutRoute() {
     <main className="page page--narrow">
       <h1>Ve ChemLab</h1>
       <p>
-        ChemLab day hoa hoc theo cach question-first: moi bai bat dau bang mot cau hoi
-        duoc chinh bai hoc tra loi, co chip doi chieu SGK va validator chan noi dung
-        lech chuong trinh.
+        ChemLab dạy hóa học theo cách question-first: mỗi bài bắt đầu bằng một câu
+        hỏi được chính bài học trả lời, có chip đối chiếu SGK và validator chặn nội
+        dung lệch chương trình.
       </p>
       <p>
-        Ban MVP nay dang tap trung vao mot bai mau lop 8: phan ung hoa hoc tao nuoc.
+        Bản MVP này đang tập trung vào một bài mẫu lớp 8: phản ứng hóa học tạo nước.
       </p>
       <Link className="button button--secondary" to="/">
-        Quay lai kham pha
+        Quay lại khám phá
       </Link>
     </main>
   );
@@ -66,9 +66,9 @@ function LabRoute() {
   return (
     <main className="page page--narrow">
       <h1>Phong thi nghiem</h1>
-      <p>Phan lab tuong tac se duoc tach rieng o giai doan sau.</p>
+      <p>Phần lab tương tác sẽ được tách riêng ở giai đoạn sau.</p>
       <Link className="button button--secondary" to="/">
-        Quay lai ChemLab
+        Quay lại ChemLab
       </Link>
     </main>
   );
@@ -81,9 +81,9 @@ export function App() {
         <Link className="brand" to="/">
           ChemLab
         </Link>
-        <nav aria-label="Dieu huong chinh">
-          <Link to="/">Kham pha</Link>
-          <Link to="/about">Gioi thieu</Link>
+        <nav aria-label="Điều hướng chính">
+          <Link to="/">Khám phá</Link>
+          <Link to="/about">Giới thiệu</Link>
         </nav>
       </header>
       <Routes>

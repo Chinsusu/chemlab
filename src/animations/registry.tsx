@@ -88,7 +88,7 @@ function CombustionAnimation({ data, reducedMotion }: AnimationProps) {
   const reaction = data as ReactionStep | undefined;
   return (
     <div className="combustion-wrap">
-      <canvas ref={canvasRef} width={520} height={180} aria-label="Mo phong phan ung tao nuoc" />
+      <canvas ref={canvasRef} width={520} height={180} aria-label="Mô phỏng phản ứng tạo nước" />
       {reaction ? <p className="animation-caption">{reaction.displayEquation}</p> : null}
     </div>
   );

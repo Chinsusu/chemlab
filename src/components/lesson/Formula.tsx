@@ -7,7 +7,7 @@ interface FormulaProps {
 
 export function Formula({ reactants, products }: FormulaProps) {
   return (
-    <div className="formula" aria-label="Phuong trinh hoa hoc">
+    <div className="formula" aria-label="Phương trình hóa học">
       <FormulaSide species={reactants} />
       <span className="formula__arrow">→</span>
       <FormulaSide species={products} />

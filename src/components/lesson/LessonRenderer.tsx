@@ -20,10 +20,10 @@ export function LessonRenderer({ lesson }: LessonRendererProps) {
     <main className="lesson-shell">
       <div className="lesson-topbar">
         <Link className="button button--ghost" to="/">
-          ← Kham pha
+          ← Khám phá
         </Link>
         <Link className="button button--secondary" to={`/lab/${lesson.id}`}>
-          Mo phong lab
+          Mô phỏng lab
         </Link>
       </div>
 
@@ -52,7 +52,7 @@ export function LessonRenderer({ lesson }: LessonRendererProps) {
             onClick={() => setActiveStep((current) => Math.max(0, current - 1))}
             type="button"
           >
-            ← Buoc truoc
+            ← Bước trước
           </button>
           {activeStep < lesson.steps.length - 1 ? (
             <button
@@ -60,11 +60,11 @@ export function LessonRenderer({ lesson }: LessonRendererProps) {
               onClick={() => setActiveStep((current) => Math.min(lesson.steps.length - 1, current + 1))}
               type="button"
             >
-              Buoc tiep theo →
+              Bước tiếp theo →
             </button>
           ) : (
             <Link className="button button--primary" to="/">
-              Hoc bai tiep theo →
+              Học bài tiếp theo →
             </Link>
           )}
         </div>
@@ -80,9 +80,9 @@ function Stepper({
   activeStep: number;
   setActiveStep: (step: number) => void;
 }) {
-  const labels = ["Hook", "Khai niem", "Phan ung", "Thuc te", "Quiz"];
+  const labels = ["Hook", "Khái niệm", "Phản ứng", "Thực tế", "Quiz"];
   return (
-    <ol className="stepper" aria-label="Tien do bai hoc">
+    <ol className="stepper" aria-label="Tiến độ bài học">
       {labels.map((label, index) => (
         <li className={index <= activeStep ? "is-active" : ""} key={label}>
           <button type="button" onClick={() => setActiveStep(index)} aria-current={index === activeStep ? "step" : undefined}>
@@ -112,7 +112,7 @@ function StepView({
         {step.sgkChip}
       </div>
 
-      {"title" in step ? <h2>{step.title}</h2> : <h2>Kiem tra nhanh</h2>}
+      {"title" in step ? <h2>{step.title}</h2> : <h2>Kiểm tra nhanh</h2>}
 
       {"body" in step ? <p>{step.body}</p> : null}
 
@@ -123,7 +123,7 @@ function StepView({
         <>
           <Formula reactants={step.reactants} products={step.products} />
           <div className="safety-note">
-            <strong>An toan:</strong> {step.safetyNote}
+            <strong>An toàn:</strong> {step.safetyNote}
           </div>
           <ReactionAnimation step={step} reducedMotion={reducedMotion} />
         </>
@@ -193,7 +193,7 @@ function QuizBlock({
           {question.mapsToObjective >= 0 ? (
             <p className="quiz-objective">{objectives[question.mapsToObjective]}</p>
           ) : (
-            <p className="quiz-objective">Cau kiem tra hieu nham</p>
+            <p className="quiz-objective">Câu kiểm tra hiểu nhầm</p>
           )}
           <div className="answer-grid">
             {question.options.map((option, optionIndex) => {
@@ -218,7 +218,7 @@ function QuizBlock({
         </fieldset>
       ))}
       <div className="quiz-score">
-        Diem quiz chinh: {score}/{mainQuestionCount}
+        Điểm quiz chính: {score}/{mainQuestionCount}
       </div>
     </div>
   );

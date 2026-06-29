@@ -15,7 +15,7 @@ export function validateLesson(lesson: unknown): string[] {
     .reduce((sum, step) => sum + step.estimatedMinutes, 0);
 
   if (totalMinutes > 0 && outMinutes / totalMinutes > 0.2) {
-    errors.push(`Phan ngoai CT chiem ${Math.round((outMinutes / totalMinutes) * 100)}% > 20%`);
+    errors.push(`Phần ngoài CT chiếm ${Math.round((outMinutes / totalMinutes) * 100)}% > 20%`);
   }
 
   const quiz = lessonData.steps[4];
@@ -24,7 +24,7 @@ export function validateLesson(lesson: unknown): string[] {
       question.mapsToObjective !== -1 &&
       question.mapsToObjective >= lessonData.sgkMatrix.objectives.length
     ) {
-      errors.push("mapsToObjective vuot so muc tieu can dat");
+      errors.push("mapsToObjective vượt số mục tiêu cần đạt");
     }
   }
 
@@ -32,16 +32,16 @@ export function validateLesson(lesson: unknown): string[] {
     (step) => step.curriculumScope === "outOfCurriculum"
   );
   if (hasOutOfCurriculum && !quiz.questions.some((question) => question.isMisconceptionCheck)) {
-    errors.push("Bai co phan ngoai CT nhung quiz thieu cau kiem tra hieu nham");
+    errors.push("Bài có phần ngoài CT nhưng quiz thiếu câu kiểm tra hiểu nhầm");
   }
 
   const reaction = lessonData.steps.find((step) => step.type === "reaction");
   if (reaction?.type === "reaction") {
     if (!lessonData.meta.hasSafetyWarning) {
-      errors.push("Bai co phan ung nhung meta.hasSafetyWarning = false");
+      errors.push("Bài có phản ứng nhưng meta.hasSafetyWarning = false");
     }
     if (!reaction.safetyNote) {
-      errors.push("Buoc reaction thieu safetyNote");
+      errors.push("Bước reaction thiếu safetyNote");
     }
 
     const lhs = tallyAtoms(reaction.reactants);
@@ -49,7 +49,7 @@ export function validateLesson(lesson: unknown): string[] {
     const elements = new Set([...Object.keys(lhs), ...Object.keys(rhs)]);
     for (const element of elements) {
       if ((lhs[element] ?? 0) !== (rhs[element] ?? 0)) {
-        errors.push(`Phan ung chua can bang nguyen to ${element}`);
+        errors.push(`Phản ứng chưa cân bằng nguyên tố ${element}`);
       }
     }
   }
@@ -59,7 +59,7 @@ export function validateLesson(lesson: unknown): string[] {
       step.curriculumScope === "outOfCurriculum" &&
       !/ngoai chuong trinh|ngoài chương trình/i.test(step.sgkChip)
     ) {
-      errors.push(`Buoc ngoai CT can chip "Ngoai chuong trinh: ..." (${step.sgkChip})`);
+      errors.push(`Bước ngoài CT cần chip "Ngoài chương trình: ..." (${step.sgkChip})`);
     }
   }
 
@@ -67,7 +67,7 @@ export function validateLesson(lesson: unknown): string[] {
     lessonData.meta.status === "published" &&
     (!lessonData.meta.reviewedBy || !lessonData.meta.reviewDate)
   ) {
-    errors.push("Khong duoc publish khi chua co reviewedBy + reviewDate");
+    errors.push("Không được publish khi chưa có reviewedBy + reviewDate");
   }
 
   return errors;
@@ -76,7 +76,7 @@ export function validateLesson(lesson: unknown): string[] {
 export function assertValidLesson(lesson: unknown): Lesson {
   const errors = validateLesson(lesson);
   if (errors.length > 0) {
-    throw new Error(`Lesson invalid:\n${errors.join("\n")}`);
+    throw new Error(`Lesson không hợp lệ:\n${errors.join("\n")}`);
   }
   return LessonSchema.parse(lesson);
 }
